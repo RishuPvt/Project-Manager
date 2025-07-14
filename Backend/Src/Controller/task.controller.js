@@ -1,0 +1,102 @@
+import prisma from "../DB/DataBase.js";
+import ApiError from "../Utility/ApiError.js";
+import ApiResponse from "../Utility/ApiResponse.js";
+
+const createTask = async (req, res) => {
+  try {
+    const projectId = parseInt(req.params.projectId, 10);
+    const { title, description, priority, deadline, assignedTo } = req.body;
+
+    if (!title) {
+      return res.status(400).json(new ApiError(400, "Title is required"));
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    const task = await prisma.task.create({
+      data: {
+        title,
+        description,
+        priority: priority || "MEDIUM",
+        deadline: deadline ? new Date(deadline) : null,
+        project: { connect: { id: projectId } },
+        assigned: assignedTo ? { connect: { id: assignedTo } } : undefined,
+      },
+    });
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, task, "Task created successfully"));
+  } catch (error) {
+    console.error("Error creating task:", error);
+    return res.status(500).json(new ApiError(500, "Failed to create task"));
+  }
+};
+
+const getmyTask = async (req, res) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw new ApiError(400, "unauthorized to get all task");
+  }
+
+  const task = await prisma.Task.findMany({
+    where: {
+      id: userId,
+    },
+  });
+
+  if (!task) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Currently no task assign to you"));
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, task, "task fetched succesfully"));
+};
+
+const updateTaskStatus = async (req, res) => {
+  const taskId = parseInt(req.params.taskId, 10);
+
+  const { status } = req.body;
+
+  // Validate status
+  const validStatuses = ["TODO", "IN_PROGRESS", "DONE"];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json(new ApiError(400, "Invalid status value"));
+  }
+
+  try {
+    // Check if task exists
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+    });
+
+    if (!task) {
+      return res.status(404).json(new ApiError(404, "Task not found"));
+    }
+
+    // Update status
+    const updatedTask = await prisma.task.update({
+      where: { id: taskId },
+      data: { status },
+    });
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, updatedTask, "Task status updated successfully")
+      );
+  } catch (error) {
+    console.log("Error updating task status:", error);
+    return res
+      .status(500)
+      .json(new ApiError(500, "Failed to update task status"));
+  }
+};
+
+export { createTask, getmyTask, updateTaskStatus };

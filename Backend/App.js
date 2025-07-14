@@ -27,4 +27,9 @@ import ProjectRouter from "./Src/Routes/project.route.js";
 
 app.use("/api/v1/organization/project", ProjectRouter);
 
+import TaskRouter from "../Backend/Src/Routes/task.route.js";
+
+app.use("/api/v1/project/task", TaskRouter);
+
+
 export { app };
