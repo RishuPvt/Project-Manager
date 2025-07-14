@@ -1,0 +1,2 @@
+npx prisma migrate dev --name add-unique-org-name
+npx prisma migrate dev --name add-unique-org-name
