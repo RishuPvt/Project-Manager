@@ -166,14 +166,6 @@ const approveJoinRequest = async (req, res) => {
       return res.status(404).json(new ApiError(404, "Join request not found"));
     }
 
-    // 2. Check if the request belongs to the logged-in organization
-    if (joinRequest.organizationId !== req.user.id) {
-      return res
-        .status(403)
-        .json(new ApiError(403, "Not authorized to approve this request"));
-    }
-
-    // 3. Update both user and join request status
     await prisma.$transaction([
       prisma.joinRequest.update({
         where: { id: joinRequest.id },
@@ -273,7 +265,7 @@ const logoutUser = async (req, res) => {
     });
 
     if (!user) {
-      throw new ApiError(404,"user not found");
+      throw new ApiError(404, "user not found");
     }
     const logout = await prisma.user.findUnique({
       where: {
@@ -305,8 +297,8 @@ const logoutUser = async (req, res) => {
 const logoutOrg = async (req, res) => {
   const orgId = req.organization?.id;
 
-  console.log("this is id",orgId);
-  
+  console.log("this is id", orgId);
+
   try {
     const organization = await prisma.organization.findUnique({
       where: {
@@ -315,7 +307,7 @@ const logoutOrg = async (req, res) => {
     });
 
     if (!organization) {
-      throw new ApiError(404,"organization not found");
+      throw new ApiError(404, "organization not found");
     }
     const logout = await prisma.organization.findUnique({
       where: {
@@ -382,4 +374,13 @@ const getPendingRequests = async (req, res) => {
   }
 };
 
-export { registerOrg, logInOrg, registerUser, logInUser, approveJoinRequest , getPendingRequests ,logoutUser  ,logoutOrg};
+export {
+  registerOrg,
+  logInOrg,
+  registerUser,
+  logInUser,
+  approveJoinRequest,
+  getPendingRequests,
+  logoutUser,
+  logoutOrg,
+};
