@@ -20,7 +20,7 @@ router.route("/registerUser").post(registerUser);
 router.route("/logInUser").post(logInUser);
 router
   .route("/approveJoinRequest/:requestId")
-  .put(verifyJWT, approveJoinRequest);
+  .put(orgverifyJWT, approveJoinRequest);
 router.route("/getPendingRequests").get(verifyJWT, getPendingRequests);
 router.route("/logoutUser").post(verifyJWT, logoutUser);
 router.route("/logoutOrg").post(orgverifyJWT, logoutOrg);
