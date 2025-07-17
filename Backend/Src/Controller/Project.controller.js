@@ -60,4 +60,41 @@ const getAllProjects = async (req, res) => {
   }
 };
 
-export { createProject, getAllProjects };
+const getTaskOfProject = async( req , res)=>{
+    const projectId = parseInt(req.params.projectId, 10);
+  
+     const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if(!project){
+      throw new ApiError(401 , "no project found")
+    }
+
+  const tasks = await prisma.task.findMany({
+    where: {
+      projectId: projectId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    include: {
+      assigned: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+    if(!tasks){
+      throw new ApiError(400 , "no task found for this project")
+    }
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, tasks, "Task fetched successfully for project"));
+}
+
+export { createProject, getAllProjects , getTaskOfProject };
