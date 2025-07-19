@@ -1,7 +1,7 @@
 import prisma from "../DB/DataBase.js";
 import ApiError from "../Utility/ApiError.js";
 import ApiResponse from "../Utility/ApiResponse.js";
-
+import { uploadOnCloudinary } from "../Utility/cloudinary.js";
 const createTask = async (req, res) => {
   try {
     const projectId = parseInt(req.params.projectId, 10);
@@ -15,6 +15,9 @@ const createTask = async (req, res) => {
       where: { id: projectId },
     });
 
+    const FileLocalPath = req.file?.path;
+    const file = await uploadOnCloudinary(FileLocalPath);
+
     const task = await prisma.task.create({
       data: {
         title,
@@ -22,7 +25,11 @@ const createTask = async (req, res) => {
         priority: priority || "MEDIUM",
         deadline: deadline ? new Date(deadline) : null,
         project: { connect: { id: projectId } },
-        assigned: assignedTo ? { connect: { id: assignedTo } } : undefined,
+        assigned: assignedTo
+          ? { connect: { id: parseInt(assignedTo, 10) } }
+          : undefined,
+
+        file: file?.url || null,
       },
     });
 
@@ -44,7 +51,7 @@ const getmyTask = async (req, res) => {
 
   const task = await prisma.Task.findMany({
     where: {
-      id: userId,
+      assignedTo: userId,
     },
   });
 
@@ -99,4 +106,34 @@ const updateTaskStatus = async (req, res) => {
   }
 };
 
-export { createTask, getmyTask, updateTaskStatus };
+const getTaskStatusCount = async (req, res) => {
+  try {
+    const projectId = parseInt(req.params.projectId, 10);
+
+    // Get task counts by status
+    const [todo, inProgress, done] = await Promise.all([
+      prisma.task.count({ where: { projectId: projectId, status: "TODO" } }),
+      prisma.task.count({
+        where: { projectId: projectId, status: "IN_PROGRESS" },
+      }),
+      prisma.task.count({ where: { projectId: projectId, status: "DONE" } }),
+    ]);
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { todo, inProgress, done },
+          "Task status counts fetched successfully"
+        )
+      );
+  } catch (error) {
+    console.error("Error fetching task counts:", error);
+    return res
+      .status(500)
+      .json(new ApiError(500, "Failed to get task status counts"));
+  }
+};
+
+export { createTask, getmyTask, updateTaskStatus, getTaskStatusCount };
