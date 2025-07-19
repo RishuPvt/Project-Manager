@@ -4,7 +4,7 @@ import cors from "cors";
 const app = express();
 
 const corsOptions = {
-  origin: "https://backend-hub.vercel.app",
+  origin: "http://localhost:5173",
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Origin", "Content-Type", "Accept", "Authorization"],
@@ -31,5 +31,7 @@ import TaskRouter from "../Backend/Src/Routes/task.route.js";
 
 app.use("/api/v1/project/task", TaskRouter);
 
+import userRouter from "../Backend/Src/Routes/user.router.js";
 
+app.use("/api/v1/profile" , userRouter)
 export { app };
