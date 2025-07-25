@@ -13,6 +13,8 @@ import ProjectChat from './components/chat/ProjectChat';
 import ProfilePage from './components/profile/ProfilePage';
 import SettingsPage from './components/settings/SettingsPage';
 import About from './components/About/AboutUs';
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const AppContent: React.FC = () => {
   const { state, dispatch } = useApp();
   const { user, theme } = state;
@@ -30,6 +32,19 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+       {/* ToastContainer should be placed here */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+
       <Router>
         {user && <Navbar />}
         <Routes>

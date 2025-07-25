@@ -1,5 +1,9 @@
-node_modules
-# Keep environment variables out of version control
+# Ignore node_modules
+node_modules/
+
+# Ignore .env files
 .env
-note
-/generated/prisma
+
+# Ignore all log files
+*.log
+Note

@@ -1,52 +1,63 @@
 import React, { useState, useRef, useEffect } from 'react';
+import socket from "../hooks/socket"
 import { useApp } from '../../contexts/AppContext';
 import { Send, MessageSquare, Users } from 'lucide-react';
 
 const ProjectChat: React.FC = () => {
   const { state, dispatch } = useApp();
   const { user, projects, chatMessages } = state;
+const userProjects = projects.filter(p =>
+  p.members?.includes(user?.id) || p.organizationId === user?.organizationId
+);
+
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Filter projects user has access to
-  const userProjects = projects.filter(p => 
-    p.members.includes(user?.id || '') || p.organizationId === user?.organizationId
-  );
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
-  // Get messages for selected project
-  const projectMessages = chatMessages.filter(msg => msg.projectId === selectedProjectId);
-
-  // Set default project if none selected
+  // Join selected project room
   useEffect(() => {
-    if (!selectedProjectId && userProjects.length > 0) {
-      setSelectedProjectId(userProjects[0].id);
+    if (selectedProjectId) {
+      socket.emit('join_project', parseInt(selectedProjectId));
+      socket.emit('get_messages', parseInt(selectedProjectId));
     }
-  }, [userProjects, selectedProjectId]);
+  }, [selectedProjectId]);
 
-  // Scroll to bottom when new messages arrive
+  // Socket listeners
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [projectMessages]);
+    socket.on('receive_message', (msg) => {
+      dispatch({ type: 'ADD_CHAT_MESSAGE', payload: msg });
+    });
 
+    socket.on('project_messages', (msgs) => {
+      msgs.forEach((m) => {
+        dispatch({ type: 'ADD_CHAT_MESSAGE', payload: m });
+      });
+    });
+
+    return () => {
+      socket.off('receive_message');
+      socket.off('project_messages');
+    };
+  }, [dispatch]);
+
+  // Send message
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim() && selectedProjectId && user) {
-      const message = {
-        id: `msg-${Date.now()}`,
-        projectId: selectedProjectId,
-        userId: user.id,
-        userName: user.name,
-        message: newMessage.trim(),
-        timestamp: new Date().toISOString()
-      };
-
-      dispatch({ type: 'ADD_CHAT_MESSAGE', payload: message });
+    if (newMessage.trim() && user && selectedProjectId) {
+      socket.emit('send_message', {
+        message: newMessage,
+        projectId: parseInt(selectedProjectId),
+        senderId: user.id,
+      });
       setNewMessage('');
     }
   };
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
+  const projectMessages = chatMessages.filter(
+    (m) => m.projectId === selectedProjectId
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
