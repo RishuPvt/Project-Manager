@@ -1,86 +1,76 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useApp } from '../../contexts/AppContext';
-import { Building, Mail, Lock, User, FileText, Eye, EyeOff } from 'lucide-react';
-
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Building,
+  Mail,
+  Lock,
+  User,
+  FileText,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { backendurl } from "../../API/backendUrl";
+import axios from "axios";
+import { toast } from "react-toastify";
 const RegisterOrganization: React.FC = () => {
-  const { dispatch } = useApp();
+
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    organizationName: '',
-    organizationDescription: '',
-    adminName: '',
-    adminEmail: '',
-    password: '',
-    confirmPassword: ''
-  });
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [user, setUser] = useState({
+    email: "",
+    password: "",
+    name: "",
+    description: "",
+    confirmPassword: '',
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setUser({ ...user, [name]: value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
-
-    // Validation
-    const newErrors: Record<string, string> = {};
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-    if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
     setIsLoading(true);
+    setErrors({});
+    try {
+      const response = await axios.post(
+        `${backendurl}/auth/registerOrg`,
+        user,
+        {
+          withCredentials: true,
+          validateStatus: () => true,
+        }
+      );
 
-    // Simulate API call
-    setTimeout(() => {
-      const orgId = `org-${Date.now()}`;
-      const userId = `user-${Date.now()}`;
+      if (response.data.success) {
+        toast.success("Organization registered successfully!");
+      }
 
-      // Create organization
-      const organization = {
-        id: orgId,
-        name: formData.organizationName,
-        description: formData.organizationDescription,
-        adminId: userId
-      };
+      if (response.status === 409) {
+        toast.error("Organization with Email. already exists");
+      }
+      if (response.status === 500) {
+        const errorMessage =
+          response.data.message || "Authentication failed. Please try again.";
+        toast.error(errorMessage);
+      }
+    } catch (error: any) {
+      console.error("Caught error:", error);
 
-      // Create admin user
-      const adminUser = {
-        id: userId,
-        name: formData.adminName,
-        email: formData.adminEmail,
-        role: 'admin' as const,
-        organizationId: orgId
-      };
-
-      dispatch({ type: 'ADD_ORGANIZATION', payload: organization });
-      dispatch({ type: 'ADD_USER', payload: adminUser });
-      dispatch({ type: 'SET_USER', payload: adminUser });
-
-      navigate('/admin-dashboard');
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to authenticate. Please try again.";
+      console.error(errorMessage);
+    } finally {
+      navigate("/admin-dashboard");
       setIsLoading(false);
-    }, 1500);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-    // Clear error when user starts typing
-    if (errors[e.target.name]) {
-      setErrors({
-        ...errors,
-        [e.target.name]: ''
-      });
     }
   };
 
@@ -106,9 +96,12 @@ const RegisterOrganization: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
                 Organization Details
               </h3>
-              
+
               <div>
-                <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                  htmlFor="organizationName"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
                   Organization Name
                 </label>
                 <div className="relative">
@@ -117,10 +110,10 @@ const RegisterOrganization: React.FC = () => {
                   </div>
                   <input
                     id="organizationName"
-                    name="organizationName"
+                    name="name"
                     type="text"
                     required
-                    value={formData.organizationName}
+                    value={user.name}
                     onChange={handleChange}
                     className="pl-10 block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200"
                     placeholder="Enter organization name"
@@ -129,7 +122,10 @@ const RegisterOrganization: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="organizationDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                  htmlFor="organizationDescription"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
                   Description
                 </label>
                 <div className="relative">
@@ -138,9 +134,9 @@ const RegisterOrganization: React.FC = () => {
                   </div>
                   <textarea
                     id="organizationDescription"
-                    name="organizationDescription"
+                    name="description"
                     rows={3}
-                    value={formData.organizationDescription}
+                    value={user.description}
                     onChange={handleChange}
                     className="pl-10 block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200 resize-none"
                     placeholder="Describe your organization"
@@ -154,30 +150,13 @@ const RegisterOrganization: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
                 Admin Account
               </h3>
-              
-              <div>
-                <label htmlFor="adminName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Your Name
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="adminName"
-                    name="adminName"
-                    type="text"
-                    required
-                    value={formData.adminName}
-                    onChange={handleChange}
-                    className="pl-10 block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200"
-                    placeholder="Enter your full name"
-                  />
-                </div>
-              </div>
+
 
               <div>
-                <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                  htmlFor="adminEmail"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
                   Email Address
                 </label>
                 <div className="relative">
@@ -186,10 +165,10 @@ const RegisterOrganization: React.FC = () => {
                   </div>
                   <input
                     id="adminEmail"
-                    name="adminEmail"
+                    name="email"
                     type="email"
                     required
-                    value={formData.adminEmail}
+                    value={user.email}
                     onChange={handleChange}
                     className="pl-10 block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200"
                     placeholder="Enter your email"
@@ -198,7 +177,10 @@ const RegisterOrganization: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -208,9 +190,9 @@ const RegisterOrganization: React.FC = () => {
                   <input
                     id="password"
                     name="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     required
-                    value={formData.password}
+                    value={user.password}
                     onChange={handleChange}
                     className="pl-10 pr-10 block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200"
                     placeholder="Create a password"
@@ -228,12 +210,17 @@ const RegisterOrganization: React.FC = () => {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password}</p>
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {errors.password}
+                  </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -243,14 +230,14 @@ const RegisterOrganization: React.FC = () => {
                   <input
                     id="confirmPassword"
                     name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type={showConfirmPassword ? "text" : "password"}
                     required
-                    value={formData.confirmPassword}
+                    value={user.confirmPassword}
                     onChange={handleChange}
                     className="pl-10 pr-10 block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200"
                     placeholder="Confirm your password"
                   />
-                  <button
+                  <button 
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -263,7 +250,9 @@ const RegisterOrganization: React.FC = () => {
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.confirmPassword}</p>
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {errors.confirmPassword}
+                  </p>
                 )}
               </div>
             </div>
@@ -276,14 +265,14 @@ const RegisterOrganization: React.FC = () => {
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                'Create Organization'
+                "Create Organization"
               )}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Already have an account?{' '}
+              Already have an account?{" "}
               <Link
                 to="/login"
                 className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-medium"

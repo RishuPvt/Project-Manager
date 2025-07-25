@@ -1,45 +1,52 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useApp } from '../../contexts/AppContext';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
-
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { backendurl } from "../../API/backendUrl";
+import axios from "axios";
+import { toast } from "react-toastify";
 const LoginPage: React.FC = () => {
-  const { dispatch } = useApp();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginType, setLoginType] = useState<"user" | "org">("user");
+
+  const handleChange = (e : React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target; // Extract input field name and value
+    setFormData({ ...formData, [name]: value }); // Update formData state with the new value
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // Mock user data - in real app this would come from API
-      const mockUser = {
-        id: '1',
-        name: 'John Doe',
-        email: formData.email,
-        role: 'admin' as const,
-        organizationId: 'org-1',
-        avatar: undefined
-      };
+    const loginUrl =
+      loginType === "org"
+        ? `${backendurl}/auth/logInOrg`
+        : `${backendurl}/auth/logInUser`;
 
-      dispatch({ type: 'SET_USER', payload: mockUser });
-      navigate(mockUser.role === 'admin' ? '/admin-dashboard' : '/user-dashboard');
+    try {
+      const response = await axios.post(loginUrl, formData, {
+        withCredentials: true, // if you use cookies
+      });
+      if (response.status === 200) {
+        // Display success toast
+        // console.log(response?.data?.message)
+        console.log(response?.data?.data);
+
+        toast.success(response.data.data || "User login successful!");
+        navigate("/"); // Navigate to the dashboard or target page
+      }
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to login. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      // Reset loading state
       setIsLoading(false);
-    }, 1000);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    }
   };
 
   return (
@@ -59,8 +66,20 @@ const LoginPage: React.FC = () => {
 
         <div className="bg-white dark:bg-gray-800 py-8 px-6 shadow-xl rounded-2xl border border-gray-100 dark:border-gray-700">
           <form className="space-y-6" onSubmit={handleSubmit}>
+            <select
+              value={loginType}
+              onChange={(e) => setLoginType(e.target.value as "user" | "org")}
+              className="border p-2 rounded"
+            >
+              <option value="user">User</option>
+              <option value="org">Organization</option>
+            </select>
+
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Email address
               </label>
               <div className="relative">
@@ -81,7 +100,10 @@ const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Password
               </label>
               <div className="relative">
@@ -91,7 +113,7 @@ const LoginPage: React.FC = () => {
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   required
                   value={formData.password}
                   onChange={handleChange}
@@ -120,7 +142,10 @@ const LoginPage: React.FC = () => {
                   type="checkbox"
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+                >
                   Remember me
                 </label>
               </div>
@@ -140,21 +165,21 @@ const LoginPage: React.FC = () => {
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                'Sign in'
+                "Sign in"
               )}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
+              Don't have an account?{" "}
               <Link
                 to="/register-organization"
                 className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-medium"
               >
                 Create organization
               </Link>
-              {' or '}
+              {" or "}
               <Link
                 to="/register-user"
                 className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-medium"

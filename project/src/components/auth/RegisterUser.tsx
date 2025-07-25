@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useApp } from '../../contexts/AppContext';
 import { User, Mail, Lock, Building, Eye, EyeOff, Send } from 'lucide-react';
+ 
+import { backendurl } from "../../API/backendUrl";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const RegisterUser: React.FC = () => {
-  const { state, dispatch } = useApp();
+
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -18,92 +21,55 @@ const RegisterUser: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleChange = (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+      const { name, value } = e.target;
+      setFormData({ ...formData, [name]: value });
+    };
+
+
+ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
-
-    // Validation
-    const newErrors: Record<string, string> = {};
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-    if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
     setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      const userId = `user-${Date.now()}`;
-      
-      // Find organization by name
-      const organization = state.organizations.find(
-        org => org.name.toLowerCase() === formData.organizationName.toLowerCase()
+    setErrors({});
+    try {
+      const response = await axios.post(
+        `${backendurl}/auth/registerUser`,
+        formData,
+        {
+          withCredentials: true,
+          validateStatus: () => true,
+        }
       );
 
-      if (organization) {
-        // Create user
-        const newUser = {
-          id: userId,
-          name: formData.name,
-          email: formData.email,
-          role: 'user' as const,
-          organizationId: organization.id
-        };
-
-        // Create join request
-        const joinRequest = {
-          id: `req-${Date.now()}`,
-          userId: userId,
-          userName: formData.name,
-          userEmail: formData.email,
-          organizationId: organization.id,
-          status: 'pending' as const
-        };
-
-        dispatch({ type: 'ADD_USER', payload: newUser });
-        dispatch({ type: 'ADD_JOIN_REQUEST', payload: joinRequest });
-        dispatch({ type: 'SET_USER', payload: newUser });
-
-        navigate('/user-dashboard');
-      } else {
-        // Organization not found - still create user but they'll need to wait
-        const newUser = {
-          id: userId,
-          name: formData.name,
-          email: formData.email,
-          role: 'user' as const
-        };
-
-        dispatch({ type: 'ADD_USER', payload: newUser });
-        dispatch({ type: 'SET_USER', payload: newUser });
-
-        navigate('/user-dashboard');
+      if (response.data.success) {
+        toast.success("user registered successfully!");
       }
 
-      setIsLoading(false);
-    }, 1500);
-  };
+      if (response.status === 409) {
+        toast.error("user with Email. already exists");
+      }
+      if (response.status === 500) {
+        const errorMessage =
+          response.data.message || "Authentication failed. Please try again.";
+        toast.error(errorMessage);
+      }
+    } catch (error: any) {
+      console.error("Caught error:", error);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-    // Clear error when user starts typing
-    if (errors[e.target.name]) {
-      setErrors({
-        ...errors,
-        [e.target.name]: ''
-      });
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to authenticate. Please try again.";
+      console.error(errorMessage);
+    } finally {
+      navigate("/admin-dashboard");
+      setIsLoading(false);
     }
   };
+
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
