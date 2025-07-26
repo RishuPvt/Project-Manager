@@ -15,8 +15,8 @@ const LoginPage: React.FC = () => {
   const [loginType, setLoginType] = useState<"user" | "org">("user");
 
   const handleChange = (e : React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target; // Extract input field name and value
-    setFormData({ ...formData, [name]: value }); // Update formData state with the new value
+    const { name, value } = e.target; 
+    setFormData({ ...formData, [name]: value }); 
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
