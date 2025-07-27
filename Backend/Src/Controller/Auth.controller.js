@@ -31,6 +31,7 @@ const registerOrg = async (req, res) => {
       email,
       description,
       password: hashedPassword,
+    
     },
   });
 
@@ -89,11 +90,7 @@ const logInOrg = async (req, res) => {
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(
-      new ApiResponse(200, "organization logged In Successfully", {
-        id: organization.id,
-        name: organization.name,
-        email: organization.email,
-      })
+      new ApiResponse(200, organization, "organization logged In Successfully")
     );
 };
 
@@ -132,6 +129,7 @@ const registerUser = async (req, res) => {
       status: "PENDING",
       password: hashedPassword,
       organization: { connect: { id: existedOrg.id } },
+
     },
   });
 

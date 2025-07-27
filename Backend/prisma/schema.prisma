@@ -24,6 +24,7 @@ model Organization {
   users       User[]
   projects    Project[]
   joinRequests JoinRequest[]
+   role            Role          @default(ADMIN) 
 }
 
 model User {
@@ -40,6 +41,7 @@ model User {
   joinRequests    JoinRequest[]
   tasksAssigned   Task[]        @relation("AssignedTasks")
    sentMessages    Message[]     @relation("SentMessages")
+    role            Role          @default(USER) 
 }
 
 model JoinRequest {
