@@ -12,6 +12,7 @@ import {
 import { backendurl } from "../../API/backendUrl";
 import axios from "axios";
 import { toast } from "react-toastify";
+
 const AdminDashboard: React.FC = () => {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [newProject, setNewProject] = useState({
@@ -20,11 +21,36 @@ const AdminDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  // ---------------- Mock Data ----------------
-  const teamMembers = [
-    { id: 1, name: "Rishu", email: "rishu@example.com" },
-    { id: 2, name: "John", email: "john@example.com" },
-  ];
+  // ---------------- teamMembersCount ----------------
+
+  const [teamMembersCount, setteamMembersCount] = useState([]);
+
+  useEffect(() => {
+    const organizationMembers = async () => {
+      try {
+        const response = await axios.get(
+          `${backendurl}/profile/totalMemberInOrg`,
+          {
+            withCredentials: true,
+          }
+        );
+        if (response.data.success) {
+          setteamMembersCount(response.data.data);
+          // console.log(
+          //   "Total approved members in organization",
+          //   response.data.data.totalMembers
+          // );
+        }
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.message || "Please log in.";
+        toast.error(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    organizationMembers();
+  }, []);
+
   // ---------------- organizationProjects ----------------
 
   const [organizationProject, setorganizationProjects] = useState([]);
@@ -41,7 +67,7 @@ const AdminDashboard: React.FC = () => {
         if (response.data.success) {
           setorganizationProjects(response.data.data.projects);
           setProjectCount(response.data.data.count);
-          console.log(response.data.data);
+          //console.log(response.data.data);
         }
       } catch (error: any) {
         const errorMessage = error.response?.data?.message || "Please log in.";
@@ -76,7 +102,7 @@ const AdminDashboard: React.FC = () => {
         );
         if (response.data.success) {
           setPendingReq(response.data.data);
-          console.log(pendingReq);
+          //console.log(pendingReq);
         }
       } catch (error: any) {
         const errorMessage = error.response?.data?.message || "Please log in.";
@@ -88,19 +114,57 @@ const AdminDashboard: React.FC = () => {
 
     pendingRequests();
   }, [backendurl]);
-  if (loading) return <p>Loading pending requests...</p>;
 
   // ---------------- Stats ----------------
-  const completedTasks = organizationTasks.filter(
-    (t) => t.status === "done"
-  ).length;
-  const inProgressTasks = organizationTasks.filter(
-    (t) => t.status === "inprogress"
-  ).length;
+
+  const [completedTasks, setcompletedTasks] = useState();
+  const [inProgressTasks, setinProgressTasks] = useState();
+  useEffect(() => {
+    const getTaskStatusCount = async () => {
+      try {
+        const response = await axios.get(
+          `${backendurl}/project/task/gettotalTaskStatusCount`,
+          {
+            withCredentials: true,
+          }
+        );
+        if (response.data.success) {
+          setcompletedTasks(response.data.data.done);
+         // console.log(setcompletedTasks);
+          setinProgressTasks(response.data.data.inProgress);
+         // console.log(setinProgressTasks);
+        }
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.message || "Please log in.";
+        toast.error(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    getTaskStatusCount();
+  }, []);
 
   // ---------------- Handlers ----------------
-  const handleApproveRequest = (requestId: string) => {
-    console.log(`Approved request ${requestId}`);
+
+  const handleApproveRequest = async (pendingReq: string) => {
+    setLoading(true);
+    try {
+      const response = await axios.put(
+        `${backendurl}/auth/approveJoinRequest/${pendingReq}`,
+        { status: "approved" },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        //console.log(`Approved request ${pendingReq}`);
+        toast.success(response.data.message);
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "Please log in.";
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRejectRequest = (requestId: string) => {
@@ -141,6 +205,9 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return <p>Loading pending requests...</p>;
+  }
   // ---------------- JSX ----------------
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -219,7 +286,7 @@ const AdminDashboard: React.FC = () => {
                   Team Members
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {teamMembers.length}
+                  {teamMembersCount.totalMembers}
                 </p>
               </div>
             </div>
@@ -321,7 +388,7 @@ const AdminDashboard: React.FC = () => {
                       >
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="font-medium text-gray-900 dark:text-white">
-                            {project.name}
+                            {project.title}
                           </h3>
                           <span className="text-sm text-gray-500 dark:text-gray-400">
                             {completedProjectTasks}/{projectTasks.length} tasks
@@ -329,6 +396,9 @@ const AdminDashboard: React.FC = () => {
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                           {project.description}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          {project.status}
                         </p>
                         <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                           <div
