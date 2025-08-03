@@ -53,6 +53,9 @@ const getmyTask = async (req, res) => {
     where: {
       assignedTo: userId,
     },
+    include: {
+      project: true,
+    },
   });
 
   if (!task) {
@@ -136,4 +139,86 @@ const getTaskStatusCount = async (req, res) => {
   }
 };
 
-export { createTask, getmyTask, updateTaskStatus, getTaskStatusCount };
+const gettotalTaskStatusCount = async (req, res) => {
+  try {
+    const orgId = req.organization?.id;
+    const [todo, inProgress, done] = await Promise.all([
+      prisma.task.count({
+        where: {
+          project: {
+            organizationId: orgId,
+          },
+          status: "TODO",
+        },
+      }),
+      prisma.task.count({
+        where: {
+          project: {
+            organizationId: orgId,
+          },
+          status: "IN_PROGRESS",
+        },
+      }),
+      prisma.task.count({
+        where: {
+          project: {
+            organizationId: orgId,
+          },
+          status: "DONE",
+        },
+      }),
+    ]);
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { todo, inProgress, done },
+          "Task status counts fetched successfully"
+        )
+      );
+  } catch (error) {
+    console.error("Error fetching task counts:", error);
+    return res
+      .status(500)
+      .json(new ApiError(500, "Failed to get task status counts"));
+  }
+};
+
+const userTaskstatusCount = async (req, res) => {
+  const userId = req.user?.id;
+  try {
+    const [todo, inProgress, done] = await Promise.all([
+      prisma.task.count({ where: { assignedTo: userId, status: "TODO" } }),
+      prisma.task.count({
+        where: { assignedTo: userId, status: "IN_PROGRESS" },
+      }),
+      prisma.task.count({ where: { assignedTo: userId, status: "DONE" } }),
+    ]);
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { todo, inProgress, done },
+          "Task status counts fetched successfully"
+        )
+      );
+  } catch (error) {
+    console.error("Error fetching task counts:", error);
+    return res
+      .status(500)
+      .json(new ApiError(500, "Failed to get task status counts"));
+  }
+};
+
+export {
+  createTask,
+  getmyTask,
+  updateTaskStatus,
+  getTaskStatusCount,
+  gettotalTaskStatusCount,
+  userTaskstatusCount,
+};
