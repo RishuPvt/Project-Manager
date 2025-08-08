@@ -1,8 +1,5 @@
 import React, { useState } from "react";
-import {
-  DndContext,
-  DragOverlay,
-} from "@dnd-kit/core";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
 
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 
@@ -98,7 +95,9 @@ const KanbanBoard: React.FC = () => {
   );
 
   if (selectedProject !== "all") {
-    filteredTasks = filteredTasks.filter((t) => t.projectId === selectedProject);
+    filteredTasks = filteredTasks.filter(
+      (t) => t.projectId === selectedProject
+    );
   }
   if (selectedAssignee !== "all") {
     filteredTasks = filteredTasks.filter(
@@ -152,9 +151,7 @@ const KanbanBoard: React.FC = () => {
   const handleTaskSave = (taskData: Partial<Task>) => {
     if (editingTask) {
       setTasks((prev) =>
-        prev.map((t) =>
-          t.id === editingTask.id ? { ...t, ...taskData } : t
-        )
+        prev.map((t) => (t.id === editingTask.id ? { ...t, ...taskData } : t))
       );
     } else {
       const newTask: Task = {
@@ -200,9 +197,7 @@ const KanbanBoard: React.FC = () => {
     },
   ];
 
-  const teamMembers = demoUsers.filter(
-    (u) => u.organizationId === user?.orgId
-  );
+  const teamMembers = demoUsers.filter((u) => u.organizationId === user?.orgId);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
